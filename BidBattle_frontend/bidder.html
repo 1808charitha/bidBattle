@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BidBattle Auction</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
+    integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous" />
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
+    integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct"
+    crossorigin="anonymous"></script>
+  <!-- Custom CSS for Dark Mode -->
+</head>
+
+<body style="background-color: black">
+  <!-- Beginning of nav -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <a class="navbar-brand" href="#"><strong>BidBattle</strong></a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+      <div class="navbar-nav justify-content-between align-items-center w-100">
+        <div class="d-flex">
+          <a class="nav-item nav-link p-3 " href="user.html?userid" id="all-items">All Items</a>
+          <a class="nav-item nav-link p-3" id="your-auctions" href="owner.html?userid">Your Auctions</a>
+          <a class="nav-item nav-link bold active p-3" id="your-biddings" href="bidder.html?userid">Your Biddings</a>
+          <a class="nav-item nav-link p-3" id="creation" href="create.html?userid">Create Auction</a>
+        </div>
+        <div>
+          <a class="nav-item nav-link p-3" href="login.html">Logout</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+  <!-- End of Nav -->
+
+  <div style="width: 70%; margin: auto">
+    <div class="container mt-5 ">
+      <div class="row row-cols-2 row-cols-md-3" id="auction-details">
+        <!-- Auction details will be populated here -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // const apiUrl = "http://localhost:5005/bidbattle/display/owner 651a45deff105f49c8edff53";
+
+    const apiUrl = "http://localhost:5005/bidbattle";
+    const urlParam = new URLSearchParams(location.search);
+    const userid = urlParam.get("userid");
+
+    document.getElementById("all-items").href = `user.html?userid=${userid}`;
+    document.getElementById("your-auctions").href = `owner.html?userid=${userid}`;
+    document.getElementById("your-biddings").href = `bidder.html?userid=${userid}`;
+    document.getElementById("creation").href = `create.html?userid=${userid}`;
+
+    //   const apiUrl = "http://localhost:5005/bidbattle/display/owner";
+    // Function to fetch JSON data from the API
+    async function fetchAuctionData() {
+      try {
+        const urlParam = new URLSearchParams(location.search);
+        const userid = urlParam.get("userid");
+        const response = await fetch(`${apiUrl}/display/bidder/${userid}`);
+        if (!response.ok) {
+          throw new Error(`HTTP Error! Status: ${response.status}`);
+        }
+        const data = await response.json();
+        return data;
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        return [];
+      }
+    }
+
+    const auctionContainer = document.getElementById("auction-details");
+
+    // Function to populate the HTML with auction details
+    async function populateAuctionDetails() {
+      const auctionData = await fetchAuctionData();
+      // console.log(auctionData);
+      let result = [];
+
+      auctionData.forEach((item) => {
+        const cardTemplate = `
+          <div class="col mb-4">
+            <div class="card text-white bg-dark" id="${item._id}">
+              <img src="http://localhost:5005/uploads/${item.obj_pic}" class="card-img-top" alt="${item.obj_name}" />
+
+              <div class="card-body">
+                <h4 class="card-title">${item.obj_name}</h4>
+                <p class="card-text">${item.description}</p>
+                <h6 class="card-title">owner : ${item.owner_name}</h6>
+                <h6 class="card-title">Initial bid : ${item.initial_bid}</h6>
+                <h6 class="card-title">Bidder : ${item.bidder_name || "-"}</h6>
+                <h6 class="card-title">Bid Amount : ${item.bid_amount}</h6>
+                <h6 class="card-title">End time : ${item.end_time}</h6>
+                <br />
+                <div class="row align-items-center">
+                  <div class="col-md-12">
+                    <select
+                      class="custom-select mb-3 bid-amount">
+                      <option selected>Bid increment</option>
+                      <option value="1000">1000</option>
+                      <option value="2000">2000</option>
+                      <option value="3000">3000</option>
+                    </select>
+                    <button type="button" data-id="${item._id}" class="w-100 font-weight-bold btn btn-light bid-now">Bid now</button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        `;
+
+        result.push(cardTemplate);
+      });
+      auctionContainer.innerHTML = (result.length > 0) ? result.join("") : `<div class="text-white">No Auction Bidding(s) found for this owner!</div>`;
+    }
+
+    auctionContainer.addEventListener("click", async (e) => {
+      if (e.target.getAttribute("data-id")) {
+        // console.log(e.target.getAttribute("data-id"));
+        // console.log(e.target.parentNode.classList[0]);
+
+        let objId = e.target.getAttribute("data-id");
+
+        let bidamount = document.querySelector(`.${e.target.parentNode.classList[0]} .bid-amount`).value;
+        if (bidamount == "Bid increment") {
+          alert("Please select a bid amount");
+        } else {
+          // console.log(bidamount)
+          let data = {
+            userId: userid,
+            obj_id: objId,
+            bid_amount: bidamount
+          }
+          const response = await fetch(`http://localhost:5005/bidbattle/object/update`, { method: "POST", body: JSON.stringify(data), headers: { "Content-Type": "application/json" } });
+          const result = await response.json();
+          if (result == "updation done") populateAuctionDetails();
+        }
+      }
+    });
+
+    // Call the populateAuctionDetails function when the page is loaded
+    document.addEventListener("DOMContentLoaded", populateAuctionDetails);
+  </script>
+</body>
+</html>

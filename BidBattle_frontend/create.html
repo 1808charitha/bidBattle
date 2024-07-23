@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>BidBattle Auction</title>
+  <style>
+    section {
+      width: 70%;
+      margin: auto;
+    }
+  </style>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css"
+    integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous" />
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"
+    integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj"
+    crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct"
+    crossorigin="anonymous"></script>
+</head>
+
+<body>
+  <!-- Beginning of nav -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <a class="navbar-brand" href="#"><strong>BidBattle</strong></a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNavAltMarkup">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+      <div class="navbar-nav justify-content-between align-items-center w-100">
+        <div class="d-flex">
+          <a class="nav-item nav-link p-3 " href="user.html?userid" id="all-items">All Items</a>
+          <a class="nav-item nav-link p-3" id="your-auctions" href="owner.html?userid">Your Auctions</a>
+          <a class="nav-item nav-link p-3" id="your-biddings" href="bidder.html?userid">Your Biddings</a>
+          <a class="nav-item nav-link bold active p-3" id="creation" href="create.html?userid">Create Auction</a>
+        </div>
+        <div>
+          <a class="nav-item nav-link p-3" href="login.html">Logout</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+  <!-- End of Nav -->
+
+  <section>
+    <div class="main-div">
+      <h1 class="my-5">Create Auction</h1>
+
+      <form id="myForm">
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label for="obj_name">Object Name</label>
+            <input type="text" class="form-control" required id="obj_name" placeholder="Eg: Pirate ship">
+          </div>
+
+          <div class="form-group custom-file col-md-6">
+            <label for="formFile" class="form-label">Object Image</label>
+            <input class="form-control" type="file" required id="formFile">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea class="form-control" id="description" required rows="3"></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label for="end_time">End time</label>
+            <input type="date" required class="form-control" id="end_time">
+          </div>
+
+          <div class="form-group col-md-6">
+            <label for="bid_amt">Initial Bid Amount</label>
+            <input type="number" min="1" class="form-control" required id="bid_amt">
+          </div>
+
+        </div><br>
+
+        <button type="submit" class="btn-primary bg-dark">Create Auction</button>
+      </form>
+    </div>
+  </section>
+
+  <script>
+    const apiUrl = "http://localhost:5005/bidbattle";
+    const urlParam = new URLSearchParams(location.search);
+    const userid = urlParam.get("userid");
+
+    document.getElementById("all-items").href = `user.html?userid=${userid}`;
+    document.getElementById("your-auctions").href = `owner.html?userid=${userid}`
+    document.getElementById("your-biddings").href = `bidder.html?userid=${userid}`
+    document.getElementById("creation").href = `create.html?userid=${userid}`
+
+    document.getElementById('myForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const objName = document.getElementById('obj_name').value;
+      const description = document.getElementById('description').value;
+      const endTime = document.getElementById('end_time').value;
+      const bidAmt = document.getElementById('bid_amt').value;
+      const fileInput = document.getElementById('formFile');
+
+      if (fileInput.files.length === 0) {
+        document.getElementById('message').textContent = 'Please select a file to upload.';
+        return;
+      }
+      const formData = new FormData();
+      formData.append('obj_pic', fileInput.files[0]);
+
+      // Make a POST request to your backend API
+      const formDataObject = {};
+      formData.forEach((value, key) => {
+        formDataObject[key] = value;
+      });
+
+      // const data = {
+      //   obj_name: objName,
+      //   obj_pic: formDataObject,
+      //   end_time: endTime,
+      //   owner: userid,
+      //   description: description,
+      //   initial_bid: bidAmt
+      //   };
+
+      formData.append('obj_name', objName);
+      formData.append('end_time', endTime);
+      formData.append('owner', userid);
+      formData.append('description', description);
+      formData.append('initial_bid', bidAmt);
+
+      // console.log(data)
+      // const formData = new FormData(this); // Create a FormData object from the form
+
+      fetch(`${apiUrl}/object/create/${userid}`, {
+        method: 'POST',
+        // body: data,
+        body: formData
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        // console.log(response);
+        return response.json();
+      })
+      .then(data => {
+        // console.log(data.message);
+        // response.send(data);
+        // Optionally, you can redirect or perform other actions here
+        if(data.message === "Object and timeline created successfully") {
+          alert("Auction created successfully!");
+          window.location.href = document.getElementById("all-items").href;
+        } else {
+          alert("Unable to create Auction!");
+        }
+      })
+      .catch(error => {
+        console.error('There was a problem with the fetch operation:', error);
+        // Handle errors here
+      });
+    });
+  </script>
+</body>
+</html>
